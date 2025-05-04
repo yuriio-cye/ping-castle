@@ -6,7 +6,7 @@ on:
 
 jobs:
   generate-xsd:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
@@ -22,28 +22,25 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@users.noreply.github.com"
+          apt update
+          apt install -y mono-complete wget jq zip dotnet-sdk-8.0 
 
       - name: Download PingCastle
         run: |
-          Invoke-WebRequest -Uri $env:PINGCASTLE_ZIP_URL -OutFile PingCastle.zip
-          Expand-Archive -Path PingCastle.zip -DestinationPath pingcastle
+          wget -O PingCastle.zip "${PINGCASTLE_ZIP_URL}"
+          unzip PingCastle.zip
+          dotnet new console -o generate-pingcastle-xml
+          cp Program.cs generate-pingcastle-xml
 
-      - name: Generate XSD using xsd.exe
-        run: |
-          $xsdTool = "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\xsd.exe"
-          & "$xsdTool" ".\pingcastle\PingCastle.exe" /type:PingCastle.Healthcheck.HealthcheckData
-
-      - name: Move generated file
-        run: |
-          mkdir schemas -Force
-          Move-Item -Path ".\PingCastle.Healthcheck.HealthcheckData.xsd" -Destination "schemas/PingCastle.xsd" -Force
+      - run: |
+          dotnet build
+          dotnet run -- --program ../PingCastle.exe --output ../pingcastle.xml --seed 100  --items-per-list 2
+        working-directory: generate-pingcastle-xml
 
       - name: Check for changes
         id: diff
         run: |
-          git add schemas/PingCastle.xsd
+          git add ../pingcastle.xml
           if git diff --cached --quiet; then
             echo "changed=false" >> $env:GITHUB_OUTPUT
           else
