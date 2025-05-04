@@ -3,6 +3,9 @@ name: Generate PingCastle XSD and create PR
 
 on:
   workflow_dispatch:
+defaults:
+  run:
+    working-directory: bishop_data/schemas
 
 jobs:
   generate-xsd:
@@ -18,45 +21,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main  # или staging — основная ветка
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Configure Git
         run: |
           sudo apt update
-          sudo apt install -y mono-complete wget jq zip dotnet-sdk-8.0 
+          sudo apt install -y mono-complete wget jq zip dotnet-sdk-8.0
 
       - name: Download PingCastle
         run: |
-          wget -O PingCastle.zip "${PINGCASTLE_ZIP_URL}"
-          unzip PingCastle.zip
-          dotnet new console -o generate-pingcastle-xml
-          cp Program.cs generate-pingcastle-xml
+          mkdir -p "$RUNNER_TEMP/pingcastle"
+          wget -O "$RUNNER_TEMP/PingCastle.zip" "${PINGCASTLE_ZIP_URL}"
+          unzip "$RUNNER_TEMP/PingCastle.zip" -d "$RUNNER_TEMP/pingcastle"
+          dotnet new console -o $RUNNER_TEMP/program
+          cp pingcastle/Program.cs  $RUNNER_TEMP/program
 
       - run: |
           dotnet build
-          dotnet run -- --program ../PingCastle.exe --output ../pingcastle.xml --seed 100  --items-per-list 2
-        working-directory: generate-pingcastle-xml
+          dotnet run -- --program ../pingcastle/PingCastle.exe \
+            --output pingcastle.xml --seed 100  --items-per-list 2
+        working-directory: $RUNNER_TEMP/program
 
-      - name: Check for changes
-        id: diff
-        run: |
-          git add pingcastle.xml
-          if git diff --cached --quiet; then
-            echo "changed=false" >> $env:GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $env:GITHUB_OUTPUT
-
-      - name: Commit, push and create PR
-        if: steps.diff.outputs.changed == 'true'
-        run: |
-          $date = Get-Date -Format "yyyyMMdd-HHmmss"
-          $branch = "feature/pingcastle-xsd/$date"
-          git checkout -b $branch
-          git commit -m "Update PingCastle XSD [$date]"
-          git push origin $branch
-
-          gh pr create `
-            --title "Update PingCastle XSD [$date]" `
-            --body "Auto-generated XSD from PingCastle.exe" `
-            --base staging `
-            --head $branch
+      - run: |
+          cp $RUNNER_TEMP/generate-pingcastle-xml/pingcastle.xml \
+            pingcastle/pingcastle.xml
+          ls -l pingcastle
+          git diff
