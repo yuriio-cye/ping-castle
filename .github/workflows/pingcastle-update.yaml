@@ -43,7 +43,7 @@ jobs:
 
       - name: Copy PingCastle program
         run: |
-          cp pingcastle/Program.cs "${RUNNER_TEMP/program"
+          cp pingcastle/Program.cs "${RUNNER_TEMP}/program"
 
       - name: Build and run PingCastle XML generator
         working-directory: ${{ runner.temp }}/program
@@ -54,7 +54,6 @@ jobs:
 
       - name: Copying generated PingCastle XML
         run: |
-          cp $RUNNER_TEMP/generate-pingcastle-xml/pingcastle.xml \
-            pingcastle/pingcastle.xml
+          cp $RUNNER_TEMP/program/pingcastle.xml pingcastle/pingcastle.xml
           ls -l pingcastle
           git diff
