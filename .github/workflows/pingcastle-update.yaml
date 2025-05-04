@@ -22,8 +22,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          apt update
-          apt install -y mono-complete wget jq zip dotnet-sdk-8.0 
+          sudo apt update
+          sudo apt install -y mono-complete wget jq zip dotnet-sdk-8.0 
 
       - name: Download PingCastle
         run: |
