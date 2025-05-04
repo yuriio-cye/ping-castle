@@ -8,7 +8,7 @@ defaults:
     working-directory: bishop_data/schemas
 
 jobs:
-  generate-xsd:
+  generate-xml:
     runs-on: ubuntu-latest
 
     permissions:
