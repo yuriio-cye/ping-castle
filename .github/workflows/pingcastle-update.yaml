@@ -30,20 +30,30 @@ jobs:
           sudo apt install -y mono-complete wget jq zip dotnet-sdk-8.0
 
       - name: Download PingCastle
+        working-directory: ${{ runner.temp }}
         run: |
-          mkdir -p "$RUNNER_TEMP/pingcastle"
-          wget -O "$RUNNER_TEMP/PingCastle.zip" "${PINGCASTLE_ZIP_URL}"
-          unzip "$RUNNER_TEMP/PingCastle.zip" -d "$RUNNER_TEMP/pingcastle"
-          dotnet new console -o $RUNNER_TEMP/program
-          cp pingcastle/Program.cs  $RUNNER_TEMP/program
+          mkdir -p "pingcastle"
+          wget -O "PingCastle.zip" "${PINGCASTLE_ZIP_URL}"
+          unzip "PingCastle.zip"
 
-      - run: |
+      - name: Settings up emptry dotnet project
+        working-directory: ${{ runner.temp }}
+        run: |
+          dotnet new console -o program
+
+      - name: Copy PingCastle program
+        run: |
+          cp pingcastle/Program.cs "${RUNNER_TEMP/program"
+
+      - name: Build and run PingCastle XML generator
+        working-directory: ${{ runner.temp }}/program
+        run: |
           dotnet build
-          dotnet run -- --program ../pingcastle/PingCastle.exe \
+          dotnet run -- --program ../PingCastle.exe \
             --output pingcastle.xml --seed 100  --items-per-list 2
-        working-directory: $RUNNER_TEMP/program
 
-      - run: |
+      - name: Copying generated PingCastle XML
+        run: |
           cp $RUNNER_TEMP/generate-pingcastle-xml/pingcastle.xml \
             pingcastle/pingcastle.xml
           ls -l pingcastle
